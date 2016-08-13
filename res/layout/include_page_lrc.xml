@@ -9,12 +9,12 @@
         android:layout_height="match_parent"
         android:orientation="vertical" >
 
-        <TextView
+        <com.mihai.view.LyricShow
             android:id="@+id/tv_lrc"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:gravity="center"
-            android:text="暂无歌词"
+            android:textSize="20sp"
             android:textColor="#00ff00" />
     </LinearLayout>
 

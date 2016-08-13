@@ -6,6 +6,7 @@ import java.util.TimerTask;
 import android.app.Service;
 import android.content.Intent;
 import android.media.AudioManager;
+import android.media.AudioManager.OnAudioFocusChangeListener;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnErrorListener;
@@ -17,14 +18,16 @@ import android.os.RemoteException;
 import android.widget.Toast;
 
 import com.mihai.constant.Constants;
+import com.mihai.utils.LrcUtil;
 import com.mihai.utils.MediaUtils;
 
 
-public class MusicService extends Service implements OnErrorListener, OnPreparedListener, OnCompletionListener {
+public class MusicService extends Service implements OnErrorListener, OnPreparedListener, OnCompletionListener, OnAudioFocusChangeListener{
 
 	private MediaPlayer mPlayer;
 	private Messenger mMessenger;
 	private Timer mTimer;
+	private LrcUtil mLrcUtil;
 
 	@Override
 	public IBinder onBind(Intent intent) {
@@ -68,7 +71,10 @@ public class MusicService extends Service implements OnErrorListener, OnPrepared
 
 	@Override
 	public void onDestroy() {//销毁
-		// TODO
+		if (mTimer != null) {
+			mTimer.cancel();
+			mTimer = null;
+		}
 		super.onDestroy();
 	}
 
@@ -119,6 +125,10 @@ public class MusicService extends Service implements OnErrorListener, OnPrepared
 		if (mPlayer != null) {
 			mPlayer.stop();
 			MediaUtils.CURSTATE = Constants.STATE_STOP;
+			if (mTimer != null) {
+				mTimer.cancel();
+				mTimer = null;
+			}
 		}
 	}
 
@@ -137,7 +147,16 @@ public class MusicService extends Service implements OnErrorListener, OnPrepared
 	/**---------------相关的回调方法---------------**/
 	@Override
 	public void onCompletion(MediaPlayer mp) {
-
+		try {
+			//service发送消息.告诉activity,当前的歌曲播放完了,然后Maitivity根据播放模式选择哪一首歌
+			Message msg = Message.obtain();
+			msg.what = Constants.MSG_ONCOMPLETION;
+			//发送消息
+			mMessenger.send(msg);
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	@Override
@@ -172,4 +191,41 @@ public class MusicService extends Service implements OnErrorListener, OnPrepared
 		Toast.makeText(getApplicationContext(), "亲,资源有问题", 0).show();
 		return true;
 	}
+	//处理音频焦点
+	@Override
+	public void onAudioFocusChange(int focusChange) {
+		
+		switch (focusChange) {
+		case AudioManager.AUDIOFOCUS_GAIN://你已经得到了音频焦点。 
+			System.out.println("-------------AUDIOFOCUS_GAIN---------------");
+			// resume playback
+			mPlayer.start();
+			mPlayer.setVolume(1.0f, 1.0f);
+			break;
+		case AudioManager.AUDIOFOCUS_LOSS://你已经失去了音频焦点很长时间了。你必须停止所有的音频播放
+			System.out.println("-------------AUDIOFOCUS_LOSS---------------");
+			// Lost focus for an unbounded amount of time: stop playback and release media player
+			if (mPlayer.isPlaying())
+				mPlayer.stop();
+			mPlayer.release();
+			mPlayer = null;
+			break;
+		case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT://你暂时失去了音频焦点
+			System.out.println("-------------AUDIOFOCUS_LOSS_TRANSIENT---------------");
+			// Lost focus for a short time, but we have to stop
+			// playback. We don't release the media player because playback
+			// is likely to resume
+			if (mPlayer.isPlaying())
+				mPlayer.pause();
+			break;
+		case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK://你暂时失去了音频焦点，但你可以小声地继续播放音频（低音量）而不是完全扼杀音频。
+			System.out.println("-------------AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK---------------");
+			// Lost focus for a short time, but it's ok to keep playing
+			// at an attenuated level
+			if (mPlayer.isPlaying())
+				mPlayer.setVolume(0.1f, 0.1f);
+			break;
+		}
+	}
+	
 }

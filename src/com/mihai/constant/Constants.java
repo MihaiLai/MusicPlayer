@@ -7,5 +7,11 @@ public class Constants {
 
 	public static final int MSG_ONPREPARED = 1004;//暂停状态
 	public static final int MSG_ONCOMPLETION = 1005;//暂停状态
+	//播放模式的标记
+	public static final int MODEL_NORMAL = 1006;
+	public static final int MODEL_REPEAT = 1007;
+	public static final int MODEL_SINGLE = 1008;
+	public static final int MODEL_RANDOM = 1009;
+
 
 }

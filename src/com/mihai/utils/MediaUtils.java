@@ -1,11 +1,14 @@
 package com.mihai.utils;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.MediaStore;
+
 import com.mihai.bean.Music;
 import com.mihai.constant.Constants;
 
@@ -13,6 +16,7 @@ public class MediaUtils {
 	public static List<Music> songList = new ArrayList<Music>();
 	public static int CURSTATE = Constants.STATE_STOP;
 	public static int CURPOSITION = 0;
+	public static int CURMODEL = Constants.MODEL_NORMAL;
 
 	//加载手机里面的本地音乐
 	/**
@@ -60,4 +64,24 @@ public class MediaUtils {
 		}
 		return result;
 	}
+	/**
+	 * 根据歌曲的路径,得到对应的lrc
+	 * @param path
+	 * @return
+	 */
+	public static File getLrcFile(String path) {
+		File file;
+		String lrcName = path.replace(".mp3", ".lrc");//找歌曲名称相同的.lrc文件
+		file = new File(lrcName);
+		if (!file.exists()) {
+			lrcName = path.replace(".mp3", ".txt");//歌词可能是.txt结尾
+			file = new File(lrcName);
+			if (!file.exists()) {
+				return null;
+			}
+		}
+		return file;
+
+	}
+	
 }
